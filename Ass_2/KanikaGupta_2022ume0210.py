@@ -17,6 +17,9 @@ import numpy as np       # tool to operate these arrays
 img1=cv2.imread("/content/dog.jpg", cv2.IMREAD_COLOR)    # read an image
 img1=cv2.cvtColor(img1, cv2.COLOR_BGR2RGB)    # converted bgr to rgb for display
 
+from google.colab import drive
+drive.mount('/content/drive')
+
 img2=cv2.imread("/content/cat.jpg", cv2.IMREAD_COLOR)    # same for image 2
 img2=cv2.cvtColor(img2, cv2.COLOR_BGR2RGB)
 
@@ -121,5 +124,54 @@ def blend_images_with_pyramids(img1, img2, levels, bilateral_params):
 blended_image_2=blend_images_with_pyramids(img1, img2, levels=5, bilateral_params=(5, 67, 69))
 plt.imshow(blended_image_2)
 
-# Frequency Domain-This method uses Fourier Transforms to manipulate images in the
-# frequency domain before blending them and then converting them back to the spatial domain.
+# Frequency Domain-This method uses Fourier transforms to manipulate images in the frequency domain before blending them and then converting them back to the spatial domain.
+# Steps-
+# Converting both images to the frequency domain using the Fast Fourier Transform (FFT).
+# Combining the low-frequency components of one image and the high-frequency components of the other image.
+# Applying the inverse FFT to generate the hybrid image.
+
+def fft_image(image):        # Defining Function to apply FFT
+  fft=np.fft.fft2(image)
+  return np.fft.fftshift(fft)
+
+def ifft_image(image):       # Defining Function to apply inverse FFT
+  ishift=np.fft.ifftshift(image)
+  return np.fft.ifft2(ishift).real
+
+# Function to create low-pass filter
+def low_pass_filter(shape, cutoff):
+    rows, cols, channels = shape
+    crow, ccol = rows // 2, cols // 2
+    mask = np.zeros((rows, cols), np.uint8)
+    mask[crow - cutoff: crow + cutoff, ccol - cutoff: ccol + cutoff] = 1
+    return mask
+
+# Function to create high-pass filter
+def high_pass_filter(shape, cutoff):
+    rows, cols, channels = shape
+    crow, ccol = rows // 2, cols // 2
+    mask = np.ones((rows, cols), np.uint8)
+    mask[crow - cutoff: crow + cutoff, ccol - cutoff: ccol + cutoff] = 0
+    return mask
+
+# Apply FFT to both images
+fft_img1=fft_image(img1)
+fft_img2=fft_image(img2)
+
+# Generate low-pass and high-pass filters
+cutoff = 40
+low_pass_mask = low_pass_filter(img1.shape, cutoff)
+high_pass_mask = high_pass_filter(img2.shape, cutoff)
+
+# Apply filters to frequency domain representations
+low_pass_img1 = fft_img1 * np.dstack([low_pass_mask] * 3) # Duplicate the mask for each color channel
+high_pass_img2 = fft_img2 * np.dstack([high_pass_mask] * 3) # Duplicate the mask for each color channel
+
+# Combine the low-pass and high-pass filtered images
+combined_fft=low_pass_img1 + high_pass_img2
+
+# Combining image back into a normal image (spatial domain) using Inverse Fourier Transform (IFFT).
+# Apply inverse FFT to get the final hybrid image
+hybrid_image=ifft_image(combined_fft)
+plt.imshow(hybrid_image)
+
