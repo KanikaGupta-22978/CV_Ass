@@ -175,3 +175,14 @@ combined_fft=low_pass_img1 + high_pass_img2
 hybrid_image=ifft_image(combined_fft)
 plt.imshow(hybrid_image)
 
+# Question 2- Hough Transform for circle detection
+image_1=cv2.imread("/content/coins.png", cv2.IMREAD_GRAYSCALE)    # the image is loaded in grayscale, which is ideal for Hough Transform.
+blurred_image_1=cv2.GaussianBlur(image_1, (9,9), 2)   # sigma=2-amount of blurring
+circles=cv2.HoughCircles(blurred_image_1, cv2.HOUGH_GRADIENT, dp=1.2, minDist=20, param1=30, param2=40, minRadius=10, maxRadius=60)    # Performing Hough Transform
+if circles is not None:
+  circles=np.round(circles[0, :]).astype("int")   # Access the inner array with the cicle data
+  output_image=cv2.cvtColor(image_1, cv2.COLOR_GRAY2BGR)
+  for (x, y, r) in circles:
+    cv2.circle(output_image, (x, y), r, (0, 255, 0), 4)
+    cv2.circle(output_image, (x, y), 2, (0, 128, 255), 5)
+plt.imshow(cv2.cvtColor(output_image, cv2.COLOR_BGR2RGB))
