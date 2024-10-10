@@ -12,72 +12,78 @@ import numpy as np    # tool for data visaulization
 import matplotlib.pyplot as plt     #  tool to operate these arrays
 import math
 
-# Question 1
-# Function to rotate an image by a given angle (custom implementation)
-def rotate_image(image, angle):
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Function to rotate an image around the lower-left corner (Custom Implementation)
+def rotate_image_lower_left_no_translation(image, angle):
     # Get the image dimensions
     h, w = image.shape[:2]
 
-    # Calculate the center of the image
-    center = (w // 2, h // 2)
+    # Define the lower-left corner as the pivot point
+    pivot = (0, h)  # Lower-left corner (x=0, y=height)
 
-    # Create the rotation matrix using the given angle
-    rotation_matrix = cv2.getRotationMatrix2D(center, angle, 1.0)
+    # Create the rotation matrix
+    rotation_matrix = cv2.getRotationMatrix2D(pivot, angle, 1.0)
 
-    # Perform the affine transformation (rotation)
+    # Rotate the image
     rotated_image = cv2.warpAffine(image, rotation_matrix, (w, h))
 
     return rotated_image
 
-# Function to visualize the images
-def visualize_rotation(image, angles):
+# Function to rotate using OpenCV (built-in function) around the lower-left corner
+def rotate_image_opencv_lower_left(image, angle):
+    # Get the image dimensions
+    h, w = image.shape[:2]
+
+    # Define the lower-left corner as the pivot point
+    pivot = (0, h)  # Lower-left corner (x=0, y=height)
+
+    # Create the rotation matrix
+    rotation_matrix = cv2.getRotationMatrix2D(pivot, angle, 1.0)
+
+    # Rotate the image
+    rotated_image = cv2.warpAffine(image, rotation_matrix, (w, h))
+
+    return rotated_image
+
+# Function to visualize the results
+def visualize_rotation_comparison(image, angles):
     plt.figure(figsize=(12, 8))
 
     for i, angle in enumerate(angles):
-        rotated_custom = rotate_image(image, angle)
-        rotated_opencv = rotate_image_opencv(image, angle)
+        # Rotate using custom implementation
+        rotated_custom = rotate_image_lower_left_no_translation(image, angle)
+        # Rotate using OpenCV
+        rotated_opencv = rotate_image_opencv_lower_left(image, angle)
 
         # Show custom rotated image
-        plt.subplot(2, len(angles), i+1)
+        plt.subplot(2, len(angles), i + 1)
         plt.imshow(cv2.cvtColor(rotated_custom, cv2.COLOR_BGR2RGB))
-        plt.title(f'Custom: {angle}°')
+        plt.title(f'Custom: {angle}°\n(around lower-left corner)')
         plt.axis('off')
 
         # Show OpenCV rotated image
-        plt.subplot(2, len(angles), i+1+len(angles))
+        plt.subplot(2, len(angles), i + 1 + len(angles))
         plt.imshow(cv2.cvtColor(rotated_opencv, cv2.COLOR_BGR2RGB))
-        plt.title(f'OpenCV: {angle}°')
+        plt.title(f'OpenCV: {angle}°\n(around lower-left corner)')
         plt.axis('off')
 
+    plt.tight_layout()
     plt.show()
-
-# Function to rotate using OpenCV (built-in function)
-def rotate_image_opencv(image, angle):
-    # Get the dimensions of the image
-    h, w = image.shape[:2]
-
-    # Compute the center of the image
-    center = (w // 2, h // 2)
-
-    # Get the rotation matrix for OpenCV's function
-    rotation_matrix = cv2.getRotationMatrix2D(center, angle, 1.0)
-
-    # Apply the rotation
-    rotated_image = cv2.warpAffine(image, rotation_matrix, (w, h))
-
-    return rotated_image
 
 # Main execution starts here
 if __name__ == "__main__":
     # Load the image from file
-    image_path = '/content/virtual bg.jpeg'
+    image_path = '/content/virtual bg.jpeg'  # Change to your image path
     image = cv2.imread(image_path)
 
     # Specify rotation angles
     angles = [30, 60, -45]
 
     # Visualize the results of both custom and OpenCV rotations
-    visualize_rotation(image, angles)
+    visualize_rotation_comparison(image, angles)
 
 # Question 2
 # Function to create the transformation matrix for translation and scaling
@@ -132,14 +138,17 @@ if __name__ == "__main__":
     # Visualize transformations
     visualize_transformations(image, transformations)
 
-# Question 3
-# Function to create a rotation matrix
-def calculate_rotation_matrix(image, angle):
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Function to create a rotation matrix around the lower-left corner
+def calculate_rotation_matrix_lower_left(image, angle):
     h, w = image.shape[:2]  # Get image dimensions
-    center = (w // 2, h // 2)  # Calculate the center of the image
+    pivot = (0, h)  # Lower-left corner (x=0, y=height)
 
     # Create rotation matrix
-    rotation_matrix = cv2.getRotationMatrix2D(center, angle, 1.0)
+    rotation_matrix = cv2.getRotationMatrix2D(pivot, angle, 1.0)
 
     return rotation_matrix
 
@@ -153,7 +162,7 @@ def calculate_translation_matrix(dx, dy):
 # Function to combine rotation and translation
 def combine_transformations(image, angle, dx, dy):
     # Get the rotation matrix
-    rotation_matrix = calculate_rotation_matrix(image, angle)
+    rotation_matrix = calculate_rotation_matrix_lower_left(image, angle)
 
     # Get the translation matrix
     translation_matrix = calculate_translation_matrix(dx, dy)
@@ -185,7 +194,7 @@ def visualize_combined_transformations(image, transformations):
 # Main execution starts here
 if __name__ == "__main__":
     # Load the image
-    image_path = '/content/virtual bg.jpeg'
+    image_path = '/content/virtual bg.jpeg'  # Change to your image path
     image = cv2.imread(image_path)
 
     # Define combined transformations with rotation and translation
