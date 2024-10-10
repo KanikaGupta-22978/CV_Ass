@@ -186,3 +186,73 @@ if circles is not None:
     cv2.circle(output_image, (x, y), r, (0, 255, 0), 4)
     cv2.circle(output_image, (x, y), 2, (0, 128, 255), 5)
 plt.imshow(cv2.cvtColor(output_image, cv2.COLOR_BGR2RGB))
+
+#Question 1-Line Detection using Hough Transform
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Step 1: Load and convert the image to grayscale
+img_north = cv2.imread('north(1).jpg', cv2.IMREAD_GRAYSCALE)
+img_top_view = cv2.imread('Top view(1).png', cv2.IMREAD_GRAYSCALE)
+
+# Step 2: Apply Gaussian Blur to smooth the image and reduce noise
+sigma = 1.0  # Standard deviation for Gaussian filter
+blurred_north = cv2.GaussianBlur(img_north, (5, 5), sigma)
+blurred_top_view = cv2.GaussianBlur(img_top_view, (5, 5), sigma)
+
+# Step 3: Apply Laplacian of Gaussian (LoG) using cv2.Laplacian
+log_north = cv2.Laplacian(blurred_north, cv2.CV_64F)
+log_top_view = cv2.Laplacian(blurred_top_view, cv2.CV_64F)
+
+# Step 4: Find zero-crossings to detect edges
+def zero_crossings(log_img):
+    zc = np.zeros_like(log_img)
+    zc[1:-1, 1:-1] = ((log_img[1:-1, 1:-1] * log_img[2:, 1:-1] < 0) |
+                      (log_img[1:-1, 1:-1] * log_img[1:-1, 2:] < 0))
+    return zc
+
+edges_north = zero_crossings(log_north)
+edges_top_view = zero_crossings(log_top_view)
+
+# Step 5: Apply 4% threshold (similar to Figure 10.22 in G&W)
+threshold = 0.04 * np.max(edges_north)
+strong_edges_north = np.where(edges_north > threshold, 255, 0).astype(np.uint8)
+
+threshold = 0.04 * np.max(edges_top_view)
+strong_edges_top_view = np.where(edges_top_view > threshold, 255, 0).astype(np.uint8)
+
+# Step 6: Apply Hough Transform to detect lines
+def hough_transform(edges_img):
+    lines = cv2.HoughLinesP(edges_img, rho=1, theta=np.pi / 180, threshold=100, minLineLength=50, maxLineGap=10)
+    line_img = np.zeros_like(edges_img)
+
+    if lines is not None:
+        for line in lines:
+            x1, y1, x2, y2 = line[0]
+            cv2.line(line_img, (x1, y1), (x2, y2), 255, 2)
+
+    return line_img
+
+lines_north = hough_transform(strong_edges_north)
+lines_top_view = hough_transform(strong_edges_top_view)
+
+# Plot the results
+def plot_results(original, edges, lines, title):
+    plt.figure(figsize=(12, 6))
+    plt.subplot(1, 3, 1)
+    plt.imshow(original, cmap='gray')
+    plt.title(f'{title}: Original')
+
+    plt.subplot(1, 3, 2)
+    plt.imshow(edges, cmap='gray')
+    plt.title(f'{title}: Edges (Zero-Crossing + Threshold)')
+
+    plt.subplot(1, 3, 3)
+    plt.imshow(lines, cmap='gray')
+    plt.title(f'{title}: Detected Lines (Hough)')
+
+    plt.show()
+
+plot_results(img_north, strong_edges_north, lines_north, 'North View')
+plot_results(img_top_view, strong_edges_top_view, lines_top_view, 'Top View')
